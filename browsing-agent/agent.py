@@ -43,16 +43,19 @@ class BrowserAgent:
             response_message = self.chat_completion()
             self.messages.append(response_message)
 
+            # If there are no tool calls, we can exit the loop and return the final response
             if not response_message.tool_calls:
-                print("No tool calls here. Terminating loop...")
+                print(Fore.RED + "No tool calls here. Terminating loop..." + Style.RESET_ALL)
                 self.messages.append({"role": "assistant", "content": response_message.content})
                 return response_message.content
+
             else:
+                # Otherwise, we need to execute the tool calls 
                 for tool_call in response_message.tool_calls:
                     function_name = tool_call.function.name
                     function_args = json.loads(tool_call.function.arguments)
 
-                    print(f"Calling tool {function_name} with args {function_args}")
+                    print(Fore.BLUE + f"Calling tool {function_name} with args {function_args}" + Style.RESET_ALL)
 
                     tool_result = await self.mcp_client.execute_tool(
                         tool_name=function_name,
@@ -68,6 +71,8 @@ class BrowserAgent:
                         })
 
     async def process_query(self, query: str) -> str:
+        """Process a user query and return the final response"""
+
         self.messages.append({"role": "user", "content": query})
         final_response = await self.agent_loop()
 
@@ -79,10 +84,15 @@ async def main():
     await agent.initialize()
 
     try:
-        query = input(Fore.GREEN + "What would you like me to do?: " + Style.RESET_ALL)
-        response = await agent.process_query(query)
-        
-        print(Fore.BLUE + "Assistant: " + Style.RESET_ALL + response)
+        while True:
+            query = input(Fore.GREEN + "What would you like me to do? (type 'exit' to leave) " + Style.RESET_ALL)
+            
+            if query.lower() == "exit":
+                break
+            
+            response = await agent.process_query(query)
+            print("\nASSISTANT: \n" + Fore.MAGENTA + response + Style.RESET_ALL)
+
     except Exception as e:
         print(f"Error: {e}")
     finally:
