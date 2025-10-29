@@ -2,8 +2,7 @@ import os
 os.environ['TOKENIZERS_PARALLELISM'] = 'true'
 
 import torch
-from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
-import numpy as np
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 task = 'Given a query, retrieve relevant passages most relevant to the query'
 
@@ -44,12 +43,16 @@ def compute_logits(inputs, **kwargs):
     scores = batch_scores[:, 1].exp().tolist()
     return scores
 
-def reranked_context(query, docs, top_n=5):
+def reranked_context(query, docs, top_n=5, threshold=0.5):
     queries = [query] * len(docs)
     pairs = [format_instruction(query, doc) for query, doc in zip(queries, docs)]
     inputs = process_inputs(pairs)
     scores = compute_logits(inputs)
-    
-    top_docs = np.argpartition(scores, -top_n)[-top_n:]
-    context = "\n".join([docs[i] for i in top_docs])
+
+    scores_dict = [{"document": document, "score": score} for document, score in zip(docs, scores)]
+    scores_dict.sort(key=lambda x: x['score'], reverse=True)
+
+    ranked_docs = [doc['document'] for doc in scores_dict if doc['score'] > threshold][:top_n]
+
+    context = "\n".join(ranked_docs)
     return context
