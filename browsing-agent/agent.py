@@ -45,7 +45,7 @@ class BrowserAgent:
 
             # If there are no tool calls, we can exit the loop and return the final response
             if not response_message.tool_calls:
-                print(Fore.RED + "No tool calls here. Terminating loop..." + Style.RESET_ALL)
+                print(Fore.RED + "No tool calls here. Generating response..." + Style.RESET_ALL)
                 self.messages.append({"role": "assistant", "content": response_message.content})
                 return response_message.content
 
@@ -85,7 +85,7 @@ async def main():
 
     try:
         while True:
-            query = input(Fore.GREEN + "What would you like me to do? (type 'exit' to leave) " + Style.RESET_ALL)
+            query = input(Fore.GREEN + "User: (type 'exit' to leave) " + Style.RESET_ALL)
             
             if query.lower() == "exit":
                 break
